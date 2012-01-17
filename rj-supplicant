@@ -1,87 +1,28 @@
-#! /usr/bin/python
+#!/usr/bin/python
 # encoding: utf-8
+#
+# Copyright (c) 2012 Ryan Li <ryan@ryanium.com>
+# Copyright (C) 2007 YuYuwei <yu-yuwei@xmu.edu.cn>
+#
+# The EAP part(Not include MD5-Challenge) is based on eapy.py
+# by Philippe Biondi <biondi@cartel-securite.fr>
+#
+# The Red Gaint authentication algorithm is based on Mento Supplciant-6.0
+# by Soar
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#############################################################################
-##                                                                         ##
-## xmuruijie.py -- Third party Ruijie 2.56 Authentication client for Linux ##
-##                                                                         ##
-## Version 1.4.3 2011.11.15                                                ##
-##    use direct offset in success EAP processing                          ##
-##                                                                         ##
-## Version 1.4.2 2011.06.10                                                ##
-##    add online timing.                                                   ##
-##    use xrgsu algorithm as default.                                      ##
-##                                                                         ##
-## Version 1.4.1 2011.05.06                                                ##
-##    fix alive package bug.                                               ##
-##                                                                         ##
-## Version 1.4.0 2009.04.17                                                ##
-##    use hashlib module instead of md5 module                             ##
-##                                                                         ##
-## Version 1.3.9 2008.10.31                                                ##
-##    fix static authentication bug                                        ##
-##                                                                         ##
-## Version 1.3.8 2008.06.10                                                ##
-##    improve message exception handling                                   ##
-##                                                                         ##
-## Version 1.3.7 2008.04.26                                                ##
-##    add zeros to tails                                                   ##
-##                                                                         ##
-## Version 1.3.6 2008.03.28                                                ##
-##    fix message exception and use str.decode to convert charset          ##
-##                                                                         ##
-## Version 1.3.5 2008.03.28                                                ##
-##    fix md5 challenge bug with new server                                ##
-##    fix a minor locale check bug in message                              ##
-##    add extra zeros as Ruijie do                                         ##
-##                                                                         ##
-## Version 1.3.4 2008.01.20                                                ##
-##    modify the md5 response                                              ##
-##                                                                         ##
-## Version 1.3.3 2007.11.24                                                ##
-##    modify xrgsu algorithm                                               ##
-##                                                                         ##
-## Version 1.3.2 2007.10.09                                                ##
-##    improve server message parse algorithm -- thanks Lv Gaohan           ##
-##    fix package receive mac insufficiency -- thanks Lv Gaohan            ##
-##                                                                         ##
-## Version 1.3.1 2007.9.04                                                 ##
-##    change default configuration file to /etc/xmuruijie.conf             ##
-##                                                                         ##
-## Version 1.3.0 2007.8.30                                                 ##
-##    add xrgsu 1.1.1 algorithm                                            ##
-##    add server message interpreter for utf8                              ##
-##                                                                         ##
-## Version 1.2.1 2007.8.25                                                 ##
-##    improve ruijie.ping() from ping DNS to ping gateway.                 ##
-##                                                                         ##
-## Version 1.2 2007.8.24                                                   ##
-##    add logoff packet support                                            ##
-##    add a fallback boardcast address for HaiYun                          ##
-##                                                                         ##
-## Version 1.1 2007.8.20                                                   ##
-##                                                                         ##
-## Copyright (C) 2007 YuYuwei <yu-yuwei@xmu.edu.cn>                        ##
-##                                                                         ##
-## Writen and tested under Gentoo Linux 2007.0                             ##
-##                                                                         ##
-## The EAP part(Not include MD5-Challenge) is based on eapy.py             ##
-##   by Philippe Biondi <biondi@cartel-securite.fr>                        ##
-##                                                                         ##
-## The Red Gaint authentication algorithm is based on Mento Supplciant-6.0 ##
-##   by Soar                                                               ##
-##                                                                         ##
-## This program is free software; you can redistribute it and/or modify it ##
-##   under the terms of the GNU General Public License version 2           ##
-##                                                                         ##
-## This program is distributed in the hope that it will be useful, but     ##
-##   WITHOUT ANY WARRANTY; without even the implied warranty of            ##
-##   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     ##
-##   General Public License for more details.                              ##
-##                                                                         ##
-#############################################################################
-
-### Import modules we need
 import os
 import socket
 import sys
@@ -97,8 +38,6 @@ from signal import SIGINT
 from random import randint
 from commands import getoutput,getstatusoutput
 from fcntl import ioctl
-
-
 
 ### Constants
 
@@ -1104,5 +1043,3 @@ if __name__ == '__main__':
     if options.daemon:
         startstop('start',pidfile,logfile,logfile,'/dev/null')
     main()
-
-### EOF ###
