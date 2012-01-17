@@ -704,7 +704,8 @@ class ruijie:
             print 'It is time to ping gateway:'
             online, output = getstatusoutput( 'ping -c 2 -W 1 %s' %gw )
         except:
-            print 'error in ping to gw: %s' % gw
+            print 'Error pinging gateway (%s), exiting.' % gw
+            sys.exit(1)
         if online == 0:
             print '     We are online:-)'
             return True
