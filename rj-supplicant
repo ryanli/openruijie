@@ -41,7 +41,7 @@ from fcntl import ioctl
 
 ### Constants
 
-ETHERTYPE_PAE = 0x888e
+EAPOL_ETHERTYPE = 0x888e
 PAE_GROUP_ADDR = "\x01\xd0\xf8\x00\x00\x03" # Ruijie d boardcast addr
 PAE_GROUP_ADDR_2 = "\x01\x80\xc2\x00\x00\x03" 
 
@@ -92,22 +92,20 @@ opt.add_option('--md5other','-m',
         action = 'store_true',dest = 'md5o', default=False,
         help = 'Use a changed type of md5 response in some school, default: %default')
 
-
+# parse command line arguments
 (options, args) = opt.parse_args()
 
-
-### ConfigFile Parse:
-
+# parse config file
 conf = ConfigParser.SafeConfigParser()
 try:
     conf.readfp( file(options.conf,'r'))
 except IOError, err:
-    s = 'Fail to open configuration file--"%s": "%s"' % ( err.filename, err.strerror)
+    s = 'Failed to open configuration file (%s): %s' % (err.filename, err.strerror)
     sys.stderr.write(s)
     sys.stderr.flush()
     sys.exit(1)
-###    Authentication parameters
 
+# store config variables
 USER = conf.get('auth','user')
 PASS = conf.get('auth','passwd')
 DEV = conf.get('auth','interface')
@@ -116,7 +114,6 @@ pidfile = conf.get('daemon','pid')
 
 
 ### Packet builders
-
 def EAPOL(type, payload=""):
     return pack("!BBH", EAPOL_VERSION, type, len(payload))+payload
 
@@ -856,17 +853,15 @@ class xrgsu(ruijie):
 
         return rg_alive
 
-
-### Main program/
 def main():
-    s=socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETHERTYPE_PAE))
-    s.bind((DEV, ETHERTYPE_PAE))
+    s=socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(EAPOL_ETHERTYPE))
+    s.bind((DEV, EAPOL_ETHERTYPE))
     # the state of interface before
     if_orig_up = True
 
     mymac = s.getsockname()[4]
-    inithead = ethernet_header(mymac, PAE_GROUP_ADDR, ETHERTYPE_PAE)
-    inithead_2 = ethernet_header(mymac, PAE_GROUP_ADDR_2, ETHERTYPE_PAE)
+    inithead = ethernet_header(mymac, PAE_GROUP_ADDR, EAPOL_ETHERTYPE)
+    inithead_2 = ethernet_header(mymac, PAE_GROUP_ADDR_2, EAPOL_ETHERTYPE)
     if not options.xrgsu:
         print 'we use Ruijie 2.56 Algorithm'
         rg = ruijie( DEV )
@@ -884,8 +879,8 @@ def main():
         s.close()
         if_orig_up = False
         os.system( 'ifconfig %s up' % DEV)
-        s=socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETHERTYPE_PAE))
-        s.bind((DEV, ETHERTYPE_PAE))
+        s=socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(EAPOL_ETHERTYPE))
+        s.bind((DEV, EAPOL_ETHERTYPE))
         s.send( sdata )
         printframe( sdata )
 
@@ -921,10 +916,10 @@ def main():
                         ssid = rg.ssid( p_a )
                         while 1:
                             if first_time:
-                                sdata = ethernet_header(mymac, dst, ETHERTYPE_PAE) +\
+                                sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
                                         EAPOL(EAPOL_RG,rg.alive( ssid ) )
                             else:
-                                sdata = ethernet_header(mymac, PAE_GROUP_ADDR_2, ETHERTYPE_PAE) +\
+                                sdata = ethernet_header(mymac, PAE_GROUP_ADDR_2, EAPOL_ETHERTYPE) +\
                                         EAPOL(EAPOL_RG,rg.alive( ssid ) )
                             #sdata = add_zeros (sdata,nums=60)
                             s.send(sdata)
@@ -934,7 +929,7 @@ def main():
                                     if rg.get()[0]:
                                         print 'Initiate A Second Time Authentication:-)'
                                         rg.givemd5( '' )
-                                        sdata = ethernet_header(mymac, dst, ETHERTYPE_PAE) +\
+                                        sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
                                                 EAPOL(EAPOL_START) + rg.tail()
                                         #sdata = add_zeros (sdata)
                                         s.send( sdata )
@@ -947,7 +942,7 @@ def main():
                             if not rg.ping():
                                 print 'Restart Authentication!'
                                 rg.givemd5( '' )
-                                sdata = ethernet_header(mymac, dst, ETHERTYPE_PAE) +\
+                                sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
                                         EAPOL(EAPOL_START) + rg.tail()
                                 sdata = add_zeros (sdata)
                                 s.send( sdata )
@@ -969,7 +964,7 @@ def main():
                         reqdata = p[9:4+eaplen]
                         if reqtype == EAP_TYPE_ID:
                             print "Got EAP Request for identity"
-                            sdata = ethernet_header(mymac, dst, ETHERTYPE_PAE) +\
+                            sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
                                     EAPOL(EAPOL_EAPPACKET, EAP(EAP_RESPONSE, id,reqtype, USER) )\
                                     + rg.tail()
                             sdata = add_zeros (sdata)
@@ -986,7 +981,7 @@ def main():
                                 resp= resp + USER # add USER for RG
                             else:
                                 resp=chr(len(resp)) + resp + USER # add USER for RG
-                            sdata = ethernet_header(mymac, dst, ETHERTYPE_PAE) +\
+                            sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
                                     EAPOL(EAPOL_EAPPACKET, EAP(EAP_RESPONSE, id, reqtype, resp ) )\
                                     + rg.tail()
                             sdata = add_zeros (sdata)
@@ -1017,7 +1012,7 @@ def main():
     except KeyboardInterrupt:
         print "Interrupted by user"
         rg.givemd5( '' )
-        sdata = ethernet_header(mymac, dst, ETHERTYPE_PAE) +\
+        sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
                 EAPOL(EAPOL_LOGOFF) + rg.tail()
         sdata = add_zeros (sdata)
         s.send( sdata )
