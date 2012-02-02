@@ -68,7 +68,7 @@ opt.set_usage('''
     Start as Daemon: %prog -d
     Stop when running in daemon: %prog -p''')
 opt.add_option('--config', '-c',
-        action = 'store',type = 'string',dest = 'conf',default = '/etc/xmuruijie.conf',
+        action = 'store',type = 'string',dest = 'conf',default = '/etc/openruijie.conf',
         help = 'Set the configuration file, default: %default')
 opt.add_option('--daemon','-d',
         action = 'store_true',dest = 'daemon',default=False,
