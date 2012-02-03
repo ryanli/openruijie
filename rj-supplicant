@@ -146,20 +146,6 @@ def printframe(data, start_time=None):
 	print
 	print '----- end the frame ------'
 
-def add_zeros( data, nums=1000 ):
-	if not options.xrgsu:
-		# add zeros to send frame to make it to 1000bit as RuijieSupplicant
-		len_need = nums - len(data)
-		zeros = ''
-		if len_need:
-			for i in range(len_need):
-				zeros += pack('!B',0)
-		return data + zeros
-	else:
-		return data
-
-
-
 ### Daemon section
 
 def daemonize(stdout='/dev/null', stderr=None, stdin='/dev/null',
@@ -854,9 +840,9 @@ class xrgsu(ruijie):
 		return rg_alive
 
 def main():
-	s=socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(EAPOL_ETHERTYPE))
+	s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(EAPOL_ETHERTYPE))
 	s.bind((DEV, EAPOL_ETHERTYPE))
-	# the state of interface before
+	# assuming the interface is up, until we encounter an error
 	if_orig_up = True
 
 	mymac = s.getsockname()[4]
@@ -869,9 +855,8 @@ def main():
 		print 'we use Xrgsu 1.1.1 Algorithm'
 		rg =xrgsu( DEV )
 
-	print "--> Sent EAPOL Start"
+	# send EAP Start to initialize authentication
 	sdata = inithead+EAPOL(EAPOL_START)
-	#sdata = add_zeros (sdata)
 	try:
 		s.send( sdata )
 		printframe( sdata )
@@ -921,7 +906,6 @@ def main():
 							else:
 								sdata = ethernet_header(mymac, PAE_GROUP_ADDR_2, EAPOL_ETHERTYPE) +\
 										EAPOL(EAPOL_RG,rg.alive( ssid ) )
-							#sdata = add_zeros (sdata,nums=60)
 							s.send(sdata)
 							printframe(sdata, rg.success_time)
 							if first_time:
@@ -931,7 +915,6 @@ def main():
 										rg.givemd5( '' )
 										sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
 												EAPOL(EAPOL_START) + rg.tail()
-										#sdata = add_zeros (sdata)
 										s.send( sdata )
 										printframe( sdata )
 										first_time = False
@@ -944,7 +927,6 @@ def main():
 								rg.givemd5( '' )
 								sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
 										EAPOL(EAPOL_START) + rg.tail()
-								sdata = add_zeros (sdata)
 								s.send( sdata )
 								printframe( sdata )
 								break
@@ -967,7 +949,6 @@ def main():
 							sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
 									EAPOL(EAPOL_EAPPACKET, EAP(EAP_RESPONSE, id,reqtype, USER) )\
 									+ rg.tail()
-							sdata = add_zeros (sdata)
 							s.send( sdata )
 							print "--> Sent EAP response with identity = [%s]" % USER
 							printframe( sdata )
@@ -984,7 +965,6 @@ def main():
 							sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
 									EAPOL(EAPOL_EAPPACKET, EAP(EAP_RESPONSE, id, reqtype, resp ) )\
 									+ rg.tail()
-							sdata = add_zeros (sdata)
 							s.send( sdata )
 							print "--> Send EAP response with MD5 challenge"
 							printframe( sdata )
@@ -1004,7 +984,6 @@ def main():
 				else:
 					print 'Time out too many times! Exit'
 					sys.exit(2)
-				#sdata = add_zeros (sdata)
 				s.send( sdata )
 				printframe( sdata )
 				outtime += 1
@@ -1014,7 +993,6 @@ def main():
 		rg.givemd5( '' )
 		sdata = ethernet_header(mymac, dst, EAPOL_ETHERTYPE) +\
 				EAPOL(EAPOL_LOGOFF) + rg.tail()
-		sdata = add_zeros (sdata)
 		s.send( sdata )
 		printframe( sdata )
 		if not if_orig_up:
