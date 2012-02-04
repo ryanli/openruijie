@@ -249,7 +249,7 @@ class eapol:
 		self.payload = packet[4:]
 
 	@staticmethod
-	def pack(type, payload):
+	def pack(type, payload = ""):
 		return pack("!BBH", EAPOL_VERSION, type, len(payload)) + payload
 
 ## EAP packet
@@ -721,7 +721,7 @@ def main():
 
 	# send EAP Start to initialize authentication
 	eapol_start = ether.pack(PAE_GROUP_ADDR, mac_addr, EAPOL_ETHERTYPE,
-		eapol.pack(EAPOL_START, ""))
+		eapol.pack(EAPOL_START))
 	try:
 		s.send(eapol_start)
 		printframe(eapol_start)
@@ -770,7 +770,7 @@ def main():
 								print 'Restart Authentication!'
 								rg.givemd5( '' )
 								sdata = ether.pack(auth_addr, mac_addr, EAPOL_ETHERTYPE,
-									eapol.pack(EAPOL_START, "") + rg.tail())
+									eapol.pack(EAPOL_START) + rg.tail())
 								s.send(sdata)
 								printframe(sdata)
 								break
@@ -822,7 +822,7 @@ def main():
 					sys.exit(2)
 				else:
 					sdata = ether.pack(PAE_GROUP_ADDR, mac_addr, EAPOL_ETHERTYPE,
-						eapol.pack(EAPOL_START, ""))
+						eapol.pack(EAPOL_START))
 					s.send(sdata)
 					printframe(sdata)
 					outtime += 1
@@ -831,7 +831,7 @@ def main():
 		print "Interrupted by user"
 		rg.givemd5("")
 		sdata = ether.pack(auth_addr, mac_addr, EAPOL_ETHERTYPE,
-			eapol.pack(EAPOL_LOGOFF, "") + rg.tail())
+			eapol.pack(EAPOL_LOGOFF) + rg.tail())
 		s.send(sdata)
 		printframe(sdata)
 		if not if_orig_up:
