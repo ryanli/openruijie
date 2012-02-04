@@ -43,7 +43,6 @@ from fcntl import ioctl
 
 EAPOL_ETHERTYPE = 0x888e
 PAE_GROUP_ADDR = "\x01\xd0\xf8\x00\x00\x03" # Ruijie d boardcast addr
-PAE_GROUP_ADDR_2 = "\x01\x80\xc2\x00\x00\x03" 
 
 EAPOL_VERSION = 1
 EAPOL_EAPPACKET = 0
@@ -821,12 +820,8 @@ def main():
 					print 'Time out too many times! Exit'
 					sys.exit(2)
 				else:
-					if outtime % 2 == 0:
-						sdata = ether.pack(PAE_GROUP_ADDR, mac_addr, EAPOL_ETHERTYPE,
-							eapol.pack(EAPOL_START, ""))
-					else:
-						sdata = ether.pack(PAE_GROUP_ADDR, mac_addr, EAPOL_ETHERTYPE,
-							eapol.pack(EAPOL_START, ""))
+					sdata = ether.pack(PAE_GROUP_ADDR, mac_addr, EAPOL_ETHERTYPE,
+						eapol.pack(EAPOL_START, ""))
 					s.send(sdata)
 					printframe(sdata)
 					outtime += 1
