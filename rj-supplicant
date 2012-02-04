@@ -691,34 +691,33 @@ class ruijie:
 
 		return unpack('!H',_ssid_ )[0]
 
-
 	def alive( self, rg_ssid):
 		'''build the echo package to sent the online status.'''
-		rgalivebit = [ 0xff, 0xff, 0x37, 0x77, 0x7f, 0x9f, 0xff, 0xff, 0x00, 0x00,
-				0xff, 0xff, 0x37, 0x77, 0x7f, 0x9f, 0xff, 0xff, 0x00, 0x00,
-				0xff, 0xff, 0x37, 0x77, 0x7f, 0x3f, 0xff ]
+		rgalivebit = [
+			0xff, 0xff, 0x37, 0x77, 0x7f, 0x9f, 0xff, 0xff,
+			0x00, 0x00, 0xff, 0xff, 0x37, 0x77, 0x7f, 0x9f,
+			0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x37, 0x77,
+			0x7f, 0x3f, 0xff
+		]
 
 		self.sserial += 1
 		uCrypt1 = rg_ssid + self.sserial
 		uCrypt2 = self.sserial
-		print rg_ssid
-		print self.sserial
 
-		uCrypt1_hex = unpack( "!BB", pack( '!H', uCrypt1 ) )
-		uCrypt2_hex = unpack( "!BB", pack( '!H', uCrypt2 ) )
+		uCrypt1_hex = unpack("!BB", pack("!H", uCrypt1))
+		uCrypt2_hex = unpack("!BB", pack("!H", uCrypt2))
 
 		rgalivebit[0x08] = self.encodeNP(uCrypt1_hex[0])
 		rgalivebit[0x09] = self.encodeNP(uCrypt1_hex[1])
 		rgalivebit[0x12] = self.encodeNP(uCrypt2_hex[0])
 		rgalivebit[0x13] = self.encodeNP(uCrypt2_hex[1])
 
-		rg_alive=''
+		rg_alive = ""
 		for i in rgalivebit:
-			rg_alive += pack('!B', i )
-
-		print 'now the sserial is %04x' % self.sserial
+			rg_alive += pack("!B", i)
 
 		return rg_alive
+
 	def ping( self ):
 		gw = ''
 		online = 0
