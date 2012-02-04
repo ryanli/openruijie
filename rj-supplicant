@@ -495,10 +495,11 @@ class ruijie:
 		rjcs1 = (ax&0x00ff)
 		return (rjcs0,rjcs1)
 
-	def encodeNP(self, oriNP):
+	''' Encode algorithm used in various places '''
+	def encode(self, src):
 		ret = 0xFF
 		for i in range(0, 8):
-			if oriNP & (1 << i):
+			if src & (1 << i):
 				ret -= 0x80 >> i
 		return ret
 
@@ -596,7 +597,7 @@ class ruijie:
 		# 3 , we Encode the Network Parameter in Ruijie's algorithm.
 		#	0 -- > 22
 		for i in range(0,23):
-			self.rgsig[i] = self.encodeNP(self.rgsig[i])
+			self.rgsig[i] = self.encode(self.rgsig[i])
 
 		# now we pack the rgsig into string:
 
@@ -630,9 +631,9 @@ class ruijie:
 
 		# form encoded ssid :
 		for i in range( rg_index, rg_index+2 ):
-			# unpack the integer first, then use encodeNP to process it,
+			# unpack the integer first, then use encode to process it,
 			# and then pack it to ssid:
-			_ssid_ += pack( '!B', self.encodeNP( unpack( '!B',recvdata[i] )[0] ) )
+			_ssid_ += pack( '!B', self.encode( unpack( '!B',recvdata[i] )[0] ) )
 
 		return unpack('!H',_ssid_ )[0]
 
@@ -652,10 +653,10 @@ class ruijie:
 		uCrypt1_hex = unpack("!BB", pack("!H", uCrypt1))
 		uCrypt2_hex = unpack("!BB", pack("!H", uCrypt2))
 
-		rgalivebit[0x08] = self.encodeNP(uCrypt1_hex[0])
-		rgalivebit[0x09] = self.encodeNP(uCrypt1_hex[1])
-		rgalivebit[0x12] = self.encodeNP(uCrypt2_hex[0])
-		rgalivebit[0x13] = self.encodeNP(uCrypt2_hex[1])
+		rgalivebit[0x08] = self.encode(uCrypt1_hex[0])
+		rgalivebit[0x09] = self.encode(uCrypt1_hex[1])
+		rgalivebit[0x12] = self.encode(uCrypt2_hex[0])
+		rgalivebit[0x13] = self.encode(uCrypt2_hex[1])
 
 		rg_alive = ""
 		for i in rgalivebit:
