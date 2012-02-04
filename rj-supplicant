@@ -51,7 +51,7 @@ EAPOL_START = 1
 EAPOL_LOGOFF = 2
 EAPOL_KEY = 3
 EAPOL_ASF = 4
-EAPOL_RG = 0xbf
+EAPOL_KEEPALIVE = 0xbf
 
 EAP_REQUEST = 1
 EAP_RESPONSE = 2
@@ -817,7 +817,7 @@ def main():
 						# Keep sending keep-alive packets
 						while 1:
 							sdata = ether.pack(auth_addr, mac_addr, EAPOL_ETHERTYPE,
-								eapol.pack(EAPOL_RG, rg.alive(ssid)))
+								eapol.pack(EAPOL_KEEPALIVE, rg.alive(ssid)))
 							s.send(sdata)
 							printframe(sdata, rg.success_time)
 							sleep(conf.interval / 2)
