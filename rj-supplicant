@@ -258,9 +258,11 @@ class eap:
 		self.code, = unpack("!B", packet[0])
 		self.id, = unpack("!B", packet[1])
 		self.length, = unpack("!H", packet[2:4])
-		if self.length > 4:
+		if (not self.code in [EAP_SUCCESS, EAP_FAILURE]) and (self.length > 4):
 			self.type, = unpack("!B", packet[4])
-			self.data = packet[5:]
+			self.data = packet[5:self.length]
+		else:
+			self.data = packet[4:self.length]
 
 	# used for EAP_SUCCESS and EAP_FAILURE
 	@staticmethod
@@ -680,34 +682,15 @@ class ruijie:
 		else:
 			return False
 
-	def message( self, res_frame ):
-		try:
-			_msg_ = res_frame.split('\x13\x11')[1].strip('\x00').strip("'").strip('\r').strip('\n')
-		except IndexError:
-			print '* No message from server *'
-		else:
-			if len(_msg_) == 0:
-				print '* No message from server *'
-			else:
-				try:
-					_enc_ = locale.getdefaultlocale()[1].lower()
-				except:
-					# use utf8 as default charset
-					_enc_ = 'utf8'
-				print '!* Got message from server: *!'
-				print 'The enc of this machine is %s' % _enc_
-				try:
-					if _enc_ == 'utf8' or _enc_ == 'utf-8':
-						# we decode gb18030 string from serve to unicode
-						print 'decoded _msg_ to unicode.'
-						_msg_ = '\t' + _msg_.decode('gb18030').encode('utf8')
-					else:
-						# machine do not use utf8, thus, need not
-						# convert string
-						_msg_ = '\t' + _msg_
-					print _msg_
-				except:
-					print "we encount _msg_ error, could not display the message, sorry:("
+	def message(self, eap):
+		if not eap.data:
+			return None
+		# get message length
+		length = unpack("!H", eap.data[4:6])[0]
+		# message encoded in GB18030
+		msg = eap.data[6:6+length]
+		msg = msg.decode("gb18030").encode("utf8")
+		print "Server message: %s" % msg
 
 def main():
 	s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(EAPOL_ETHERTYPE))
@@ -757,7 +740,7 @@ def main():
 					if p_eap.code == EAP_SUCCESS:
 						print "Received EAP Success"
 						rg.set_success_time()
-						rg.message(s_ether)
+						rg.message(p_eap)
 						ssid = rg.ssid(s_ether)
 						# Keep sending keep-alive packets
 						while 1:
@@ -778,7 +761,7 @@ def main():
 								sleep(conf.interval / 2)
 					elif p_eap.code == EAP_FAILURE:
 						print "Received EAP Failure"
-						rg.message(s_ether)
+						rg.message(p_eap)
 					elif p_eap.code == EAP_RESPONSE:
 						print "?? Received EAP Response"
 					elif p_eap.code == EAP_REQUEST:
