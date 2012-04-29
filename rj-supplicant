@@ -505,43 +505,6 @@ class ruijie:
 				ret -= 0x80 >> i
 		return ret
 
-	def randstr( self ):
-		'''Special random string function for the seek frame and first Respond frame.
-		Comes from Mento Supplicant v 6.0 beta3 by soar.
-
-		'''
-		a = randint(0,0xffff)
-		b = randint(0,0xffff)
-		c = randint(0,0xffff)
-		d = randint(0,0xffff)
-		e = randint(0,0xffff)
-		f = randint(0,0xffffffff)
-		interstr = '%X%X%X%X%X%X388498639F49EBACA773DFD78789088A' % (a,b,c,d,e,f )
-		return unpack( '!32B', interstr[0:32] )
-
-	def Hash8021x(self, md5get ): # md5get is a binary string
-		'''
-		Hash8021x is the key algorithm in Red Gaint (Ruijie) Supplicant. 
-		It comes from Mento Supplicant v 6.0 beta 3 by soar.
-
-		'''
-		# this 8021x.exe is RuiJie Supplicant 2.56
-		rjfile = file( '/etc/8021x.exe', 'rb')
-		rjfile.seek(0x1000)
-		bufferSize = 0x4a00
-		tableC='' # the string to be digest
-
-		for i in range(0,8):
-			tableC += md5get[i*2] 
-			h_md5rec=md5get
-			m2= hashlib.md5( h_md5rec + rjfile.read(bufferSize))
-			tableC += m2.digest()
-			tableC += md5get[i*2+1]
-
-		strMD5Hash = hashlib.md5( tableC ).hexdigest()
-		return unpack( '!32B', strMD5Hash )
-
-
 	def tail(self):
 		self.rgsig = [
 				## 0 --> 22
