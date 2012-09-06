@@ -4,7 +4,7 @@
 # Copyright (c) 2012 Ryan Li <ryan@ryanium.com>
 # Copyright (C) 2007 YuYuwei <yu-yuwei@xmu.edu.cn>
 #
-# The EAP part(Not include MD5-Challenge) is based on eapy.py
+# EAP-related part (excluding MD5-Challenge) is based on eapy.py
 # by Philippe Biondi <biondi@cartel-securite.fr>
 #
 # The Red Gaint authentication algorithm is based on Mento Supplciant-6.0
@@ -124,9 +124,9 @@ def printframe(data, start_time=None):
 	print '--- frame content ---'
 	for i in range(0,length):
 		if (i % 0x10) == 0:
-			print '\n%04x:' % lineno,
+			print '\n%04x' % lineno,
 			lineno += 1
-		if (i % 0x08) == 0:
+		elif (i % 0x08) == 0:
 			print "",
 		print b2a_hex(data[i]),
 	print
@@ -204,7 +204,7 @@ def killpid(pid=None,
 			if do_exit:
 				sys.exit(1)
 
-def startstop( action, pidfile='/var/run/xmuruijie.pid',
+def startstop( action, pidfile='/var/run/lightruijie.pid',
 		stdout='/dev/null', stderr=None, stdin='/dev/null' ):
 	try:
 		pf = file(pidfile,'r')
@@ -227,6 +227,13 @@ def startstop( action, pidfile='/var/run/xmuruijie.pid',
 			pid=None
 		daemonize(stdout, stderr, stdin, pidfile)
 		return
+
+def encode(src):
+	ret = 0xFF
+	for i in range(0, 8):
+		if src & (1 << i):
+			ret -= 0x80 >> i
+	return ret
 
 ## Ethernet packet
 class ether:
@@ -329,11 +336,8 @@ class ruijie:
 		self.HW = 0x8927 # SIOCGIFHWADDR
 		self._mac = self.mac()
 		self.md5rec = md5str
-		self.sserial = 0x102a
-		self.success_time = 0
-
-	def set_success_time(self):
-		self.success_time = time.time()
+		self.fingerprint = None
+		self.serial = 0x102c
 
 	def get(self):
 		'''
@@ -497,14 +501,6 @@ class ruijie:
 		rjcs1 = (ax&0x00ff)
 		return (rjcs0,rjcs1)
 
-	''' Encode algorithm used in various places '''
-	def encode(self, src):
-		ret = 0xFF
-		for i in range(0, 8):
-			if src & (1 << i):
-				ret -= 0x80 >> i
-		return ret
-
 	def tail(self):
 		self.rgsig = [
 				## 0 --> 22
@@ -562,7 +558,7 @@ class ruijie:
 		# 3 , we Encode the Network Parameter in Ruijie's algorithm.
 		#	0 -- > 22
 		for i in range(0,23):
-			self.rgsig[i] = self.encode(self.rgsig[i])
+			self.rgsig[i] = encode(self.rgsig[i])
 
 		# now we pack the rgsig into string:
 
@@ -574,60 +570,38 @@ class ruijie:
 
 		return self.rgsig_str
 
-	def ssid( self, recvdata ):
-		'''get Red Gaint SSID from the whole successful frame, and return it in 16-bit integer.
-		'''
-		# eaplen:
-		offset = unpack( '!H',recvdata[0x10:0x12] )[0]
-		print 'header length: %d' % offset
+	def get_fingerprint(self, p_eap):
+		'''Get fingerprint of session from EAP success message'''
+		offset = p_eap.length - 4 - 9
 
-		# the first 8-bit integer index:
-		# we directly use the static offset, since the recent one change the
-		# tail length
-		#rg_index = 0x12 + offset - 37
-		rg_index = 159
-
-		print 'Got Red Gaint SSID:',
-		for i in range(rg_index,rg_index+2):
-			print b2a_hex(recvdata[ i] ),
+		seq = ""
+		print 'Session fingerprint:',
+		for i in range(0,4):
+			byte = p_eap.data[offset + i]
+			print b2a_hex(byte),
+			seq += pack('!B', encode(unpack('!B', byte)[0]))
 		print
-		# string to store the packed 8-bit integers:
-		_ssid_ = ''
+		fp = unpack('!I', seq)[0]
+		self.fingerprint = fp
 
-		# form encoded ssid :
-		for i in range( rg_index, rg_index+2 ):
-			# unpack the integer first, then use encode to process it,
-			# and then pack it to ssid:
-			_ssid_ += pack( '!B', self.encode( unpack( '!B',recvdata[i] )[0] ) )
-
-		return unpack('!H',_ssid_ )[0]
-
-	def alive( self, rg_ssid):
-		'''build the echo package to sent the online status.'''
-		rgalivebit = [
+	def keepalive(self):
+		'''Returns keepalive packet data.'''
+		bitmap = [
 			0xff, 0xff, 0x37, 0x77, 0x7f, 0x9f, 0xff, 0xff,
 			0x00, 0x00, 0xff, 0xff, 0x37, 0x77, 0x7f, 0x9f,
 			0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x37, 0x77,
 			0x7f, 0x3f, 0xff
 		]
 
-		self.sserial += 1
-		uCrypt1 = rg_ssid + self.sserial
-		uCrypt2 = self.sserial
+		bitmap[0x6:0xa] = map(encode, unpack('!BBBB', pack('!I', self.fingerprint + self.serial)))
+		bitmap[0x10:0x14] = map(encode, unpack('!BBBB', pack('!I', self.serial)))
 
-		uCrypt1_hex = unpack("!BB", pack("!H", uCrypt1))
-		uCrypt2_hex = unpack("!BB", pack("!H", uCrypt2))
+		self.serial += 1
 
-		rgalivebit[0x08] = self.encode(uCrypt1_hex[0])
-		rgalivebit[0x09] = self.encode(uCrypt1_hex[1])
-		rgalivebit[0x12] = self.encode(uCrypt2_hex[0])
-		rgalivebit[0x13] = self.encode(uCrypt2_hex[1])
-
-		rg_alive = ""
-		for i in rgalivebit:
-			rg_alive += pack("!B", i)
-
-		return rg_alive
+		ret = ""
+		for i in bitmap:
+			ret += pack("!B", i)
+		return ret
 
 	def ping( self ):
 		gw = ''
@@ -646,6 +620,7 @@ class ruijie:
 			return False
 
 	def message(self, eap):
+		'''Extract server message from packet'''
 		if not eap.data:
 			return None
 		# get message length
@@ -702,15 +677,16 @@ def main():
 					p_eap = eap(s_eap)
 					if p_eap.code == EAP_SUCCESS:
 						print "Received EAP Success"
-						rg.set_success_time()
+						printframe(s_ether, time.time())
 						rg.message(p_eap)
-						ssid = rg.ssid(s_ether)
-						# Keep sending keep-alive packets
+						rg.get_fingerprint(p_eap)
+						# Keep sending keepalive packets
 						while 1:
+							print 'Sending a keepalive packet...'
 							sdata = ether.pack(auth_addr, mac_addr, EAPOL_ETHERTYPE,
-								eapol.pack(EAPOL_KEEPALIVE, rg.alive(ssid)))
+								eapol.pack(EAPOL_KEEPALIVE, rg.keepalive()))
 							s.send(sdata)
-							printframe(sdata, rg.success_time)
+							printframe(sdata)
 							sleep(conf.interval / 2)
 							if not rg.ping():
 								print 'Restart Authentication!'
